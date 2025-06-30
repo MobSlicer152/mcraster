@@ -10,6 +10,8 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.util.function.Predicate;
+
 public class EmulatorEntity extends MarkerEntity {
     private static EmulatorThread emulator = null;
 
@@ -20,17 +22,21 @@ public class EmulatorEntity extends MarkerEntity {
             var serverWorld = (ServerWorld)world;
 
             // stop multiple emulators from existing
-            var emulators = serverWorld.getEntitiesByType(EntityType.EMULATOR, null);
+            var emulators = serverWorld.getEntitiesByType(EntityType.EMULATOR, new Predicate<EmulatorEntity>() {
+                @Override
+                public boolean test(EmulatorEntity emulatorEntity) {
+                    return true;
+                }
+            });
+
             emulators.forEach(emulator -> {
                 if (emulator != this) {
                     emulator.remove(RemovalReason.DISCARDED);
                 }
             });
 
-            if (emulator == null) {
-                emulator = new EmulatorThread();
-                emulator.start();
-            }
+            emulator = new EmulatorThread(this);
+            emulator.start();
         }
     }
 
@@ -51,9 +57,7 @@ public class EmulatorEntity extends MarkerEntity {
 
     @Override
     public void readCustomData(ReadView view) {
-        if (emulator == null) {
-            emulator = new EmulatorThread();
-            emulator.start();
-        }
+        emulator = new EmulatorThread(this);
+        emulator.start();
     }
 }

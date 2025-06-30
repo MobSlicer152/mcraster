@@ -1,5 +1,7 @@
 package dev.randomcode.mcraster;
 
+import com.dylibso.chicory.wasm.Parser;
+import com.dylibso.chicory.wasm.WasmModule;
 import dev.randomcode.mcraster.entity.EntityType;
 import dev.randomcode.mcraster.util.Palette;
 import net.fabricmc.api.ModInitializer;
@@ -22,6 +24,7 @@ public class MCRaster implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("MCRaster");
 
 	public static Palette PALETTE;
+	public static WasmModule MODULE;
 
 	public static Identifier identifier(String name) {
 		return Identifier.of(MCRaster.MOD_ID, name);
@@ -34,9 +37,14 @@ public class MCRaster implements ModInitializer {
 			public void reload(ResourceManager manager) {
                 try {
 					LOGGER.info("Loading palette");
-					var resource = manager.getResource(identifier("palette.json")).orElseThrow();
-                    PALETTE = new Palette(resource.getReader());
+					var palette = manager.getResource(identifier("palette.json")).orElseThrow();
+                    PALETTE = new Palette(palette.getReader());
 					LOGGER.info("Palette: {}", PALETTE);
+
+					LOGGER.info("Loading WASM module");
+					var module = manager.getResource(identifier("program.wasm")).orElseThrow();
+					MODULE = Parser.parse(module.getInputStream());
+					LOGGER.info("Loaded WASM module {}", MODULE.toString());
                 } catch (Exception e) {
                     LOGGER.error("Failed to load palette: {}", e.toString());
                 }

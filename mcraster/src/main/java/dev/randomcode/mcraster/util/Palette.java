@@ -6,13 +6,14 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
+import java.io.Reader;
 import java.util.ArrayList;
 
 public class Palette {
     private final ArrayList<Identifier> palette = new ArrayList<>();
 
-    public Palette(String paletteData) {
-        var rawPalette = JsonHelper.deserializeArray(paletteData);
+    public Palette(Reader reader) {
+        var rawPalette = JsonHelper.deserializeArray(reader);
         rawPalette.forEach((name) -> {
             palette.add(Identifier.tryParse(name.getAsString()));
         });
@@ -25,5 +26,9 @@ public class Palette {
             // leave holes in stuff with unknown colors
             return Blocks.AIR;
         }
+    }
+
+    public String toString() {
+        return palette.toString();
     }
 }

@@ -1,59 +1,59 @@
 package dev.randomcode.mcraster.entity;
 
+import dev.randomcode.mcraster.MCRaster;
 import dev.randomcode.mcraster.emulator.EmulatorScreen;
 import dev.randomcode.mcraster.emulator.EmulatorThread;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.MarkerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class EmulatorEntity extends Entity {
-    private EmulatorThread emulator = null;
+public class EmulatorEntity extends MarkerEntity {
+    private static EmulatorThread emulator = null;
 
-    public EmulatorEntity(EntityType<?> type, World world) {
+    public EmulatorEntity(net.minecraft.entity.EntityType<?> type, World world) {
         super(type, world);
 
-        // stop multiple emulators from existing
-        if (world.getEntitiesByType(Entities.EMULATOR_ENTITY_TYPE, null, null).size() > 1) {
-            getServer().sendMessage(Text.of("this mod is jank, only one emulator at a time is supported"));
-            remove(RemovalReason.DISCARDED);
-        }
+        if (!world.isClient()) {
+            var serverWorld = (ServerWorld)world;
 
-        emulator = new EmulatorThread();
-        emulator.run();
-    }
+            // stop multiple emulators from existing
+            var emulators = serverWorld.getEntitiesByType(EntityType.EMULATOR, null);
+            emulators.forEach(emulator -> {
+                if (emulator != this) {
+                    emulator.remove(RemovalReason.DISCARDED);
+                }
+            });
 
-    @Override
-    public void tick() {
-        for (int y = 0; y < EmulatorScreen.HEIGHT; y++) {
-            for (int x = 0; x < EmulatorScreen.WIDTH; x++) {
-
+            if (emulator == null) {
+                emulator = new EmulatorThread();
+                emulator.start();
             }
         }
     }
 
     @Override
-    protected void initDataTracker(DataTracker.Builder builder) {
-
+    public void tick() {
+        if (!getWorld().isClient()) {
+            var serverWorld = (ServerWorld)getWorld();
+            BlockPos topLeft = getBlockPos().up(EmulatorScreen.HEIGHT);
+            for (int y = 0; y < EmulatorScreen.HEIGHT; y++) {
+                for (int x = 0; x < EmulatorScreen.WIDTH; x++) {
+                    BlockPos pos = topLeft.add(x, -y, 0);
+                    BlockState block = MCRaster.PALETTE.get(emulator.getScreen().getPixel(x, y)).getDefaultState();
+                    serverWorld.setBlockState(pos, block);
+                }
+            }
+        }
     }
 
     @Override
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        return false;
-    }
-
-    @Override
-    protected void readCustomData(ReadView view) {
-
-    }
-
-    @Override
-    protected void writeCustomData(WriteView view) {
-
+    public void readCustomData(ReadView view) {
+        if (emulator == null) {
+            emulator = new EmulatorThread();
+            emulator.start();
+        }
     }
 }

@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 doomgeneric = { path = "../doomgeneric-rs" }
+fast_image_resize = "5.1.4"

@@ -1,3 +1,5 @@
+use fast_image_resize::{ImageView, ImageViewMut, Resizer, ResizeAlg, ResizeOptions, images::{TypedImage, TypedImageRef}, pixels};
+    
 #[link(wasm_import_module = "mcraster")]
 unsafe extern "C" {
     fn running() -> i32;
@@ -13,7 +15,14 @@ struct Doom;
 
 impl doomgeneric::game::DoomGeneric for Doom {
     fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize) {
-        unsafe { presentFrame(screen_buffer.as_ptr() as *const u8, screen_buffer.len() as i32); }
+        let screen_image: TypedImageRef<'_, pixels::U8> = TypedImageRef::from_buffer(xres as u32, yres as u32, screen_buffer).expect("failed to make image reference");
+        let mut emulator_image = TypedImage::new(unsafe { getWidth() } as u32, unsafe { getHeight() } as u32);
+        let mut resizer = Resizer::new();
+        let options = &ResizeOptions::new().resize_alg(ResizeAlg::Nearest).use_alpha(false);
+        resizer.resize_typed(&screen_image, &mut emulator_image, Some(options));
+
+        let pixels = &emulator_image.pixels();
+        unsafe { presentFrame(pixels.as_ptr() as *const u8, pixels.len() as i32); }
     }
 
     fn get_key(&mut self) -> Option<doomgeneric::input::KeyData> {

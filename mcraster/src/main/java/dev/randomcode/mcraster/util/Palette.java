@@ -20,8 +20,10 @@ public class Palette {
     }
 
     public Block get(byte color) {
-        if (color > 0 && color < palette.size()) {
-            return Registries.BLOCK.get(palette.get(color));
+		// ensure the color is unsigned. i get discouraging unsigned types, but not implementing them is lazy.
+		int realColor = color & 0xFF;
+        if (realColor < palette.size()) {
+            return Registries.BLOCK.get(palette.get(realColor));
         } else {
             // leave holes in stuff with unknown colors
             return Blocks.AIR;

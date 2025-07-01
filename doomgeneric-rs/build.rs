@@ -29,9 +29,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     cc::Build::new()
         .flag("-w") // Disable warnings
-        .flag("-sEXPORT_ALL")
-        .define("DOOMGENERIC_RESX", "160")
-        .define("DOOMGENERIC_RESY", "120")
+        .define("DOOMGENERIC_RESX", "320")
+        .define("DOOMGENERIC_RESY", "200")
         .define("CMAP256", None)
         .files(dg_c_paths)
         .compile("doomgeneric");

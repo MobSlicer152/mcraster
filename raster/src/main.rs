@@ -1,5 +1,3 @@
-#![no_main]
-
 #[link(wasm_import_module = "mcraster")]
 unsafe extern "C" {
     fn running() -> i32;
@@ -27,8 +25,9 @@ impl doomgeneric::game::DoomGeneric for Doom {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn main() {
+fn main() {
+    println!("starting doom");
+
     let doom = Doom;
     doomgeneric::game::init(doom);
     while unsafe { running() } != 0 {

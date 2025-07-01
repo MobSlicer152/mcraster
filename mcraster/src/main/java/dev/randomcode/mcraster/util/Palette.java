@@ -20,7 +20,7 @@ public class Palette {
     }
 
     public Block get(byte color) {
-        if (color < palette.size()) {
+        if (color > 0 && color < palette.size()) {
             return Registries.BLOCK.get(palette.get(color));
         } else {
             // leave holes in stuff with unknown colors

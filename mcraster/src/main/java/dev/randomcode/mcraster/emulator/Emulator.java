@@ -2,25 +2,49 @@ package dev.randomcode.mcraster.emulator;
 
 import com.dylibso.chicory.runtime.*;
 
-import com.dylibso.chicory.wasm.Parser;
-import com.dylibso.chicory.wasm.types.DataSegment;
+import com.dylibso.chicory.wasi.WasiOptions;
+import com.dylibso.chicory.wasi.WasiPreview1;
 import com.dylibso.chicory.wasm.types.FunctionType;
 import com.dylibso.chicory.wasm.types.ValType;
 import dev.randomcode.mcraster.MCRaster;
 import dev.randomcode.mcraster.entity.EmulatorEntity;
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.nio.file.FileSystems;
 import java.util.List;
+import java.util.function.Function;
 
-public class EmulatorThread extends Thread {
-    private EmulatorEntity parent;
+public class Emulator extends Thread {
+    private final EmulatorEntity parent;
     private EmulatorScreen screen;
 
-    public EmulatorThread(EmulatorEntity parent) {
+    public Emulator(EmulatorEntity parent) {
         super();
 
         this.parent = parent;
-        setName("Emulator");
+        setName("Emulator thread");
+    }
+
+    private static class EmulatorOutputStream extends OutputStream {
+        private final Function<String, Void> output;
+        private final StringBuilder buffer;
+
+        public EmulatorOutputStream(Function<String, Void> write) {
+            output = write;
+            buffer = new StringBuilder();
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            if (b == '\n') {
+                output.apply(buffer.toString());
+                buffer.setLength(0);
+            } else {
+                buffer.append((char) b);
+            }
+        }
     }
 
     @Override
@@ -28,26 +52,53 @@ public class EmulatorThread extends Thread {
         MCRaster.LOGGER.debug("Emulator started");
 
         screen = new EmulatorScreen();
-
-        var store = initHostFunctions();
-        var instance = store.instantiate("program", MCRaster.MODULE);
-        var main = instance.export("main");
+        var wasi = initWasi();
+        var store = initHostFunctions(wasi);
 
         while (parent.isAlive()) {
             screen.clear((byte) 0);
 
-            main.apply();
+            try {
+                store.instantiate("program", MCRaster.module);
+            } catch (Exception e) {
+                MCRaster.LOGGER.error("Failed to run emulator", e);
+            }
 
             MCRaster.LOGGER.info("Restarting emulator in 500ms");
             try {
                 sleep(500);
             } catch (InterruptedException e) {
+                // doesn't need to be precise at all, just an arbitrary wait
             }
         }
     }
 
-    private Store initHostFunctions() {
+    private WasiPreview1 initWasi() {
+        var stdout = new EmulatorOutputStream(s -> {
+            MCRaster.LOGGER.info(s);
+            return null;
+        });
+        var stderr = new EmulatorOutputStream(s -> {
+            MCRaster.LOGGER.error(s);
+            return null;
+        });
+        var optionBuilder = WasiOptions.builder().withStdout(stdout).withStderr(stderr);
+        if (MCRaster.dataFs != null) {
+            optionBuilder.withDirectory(".", MCRaster.dataFs.getPath("/"));
+        }
+        return WasiPreview1.builder().withOptions(optionBuilder.build()).build();
+    }
+
+    private Store initHostFunctions(WasiPreview1 wasi) {
         var store = new Store();
+        store.addFunction(wasi.toHostFunctions());
+        store.addFunction(
+                new ImportFunction("env", "system",
+                        FunctionType.of(List.of(ValType.I32), List.of(ValType.I32)),
+                        (Instance instance, long... args) -> {
+                            return new long[]{1};
+                        }
+                ));
         store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "running",
                         FunctionType.of(List.of(), List.of(ValType.I32)),
@@ -105,7 +156,7 @@ public class EmulatorThread extends Thread {
                             var base = (int) args[0];
                             var size = (int) args[1];
 
-                            // no buffer overflow
+                            // no buffer overflow pls
                             if (size > screen.framebuffer.length) {
                                 size = screen.framebuffer.length;
                             }

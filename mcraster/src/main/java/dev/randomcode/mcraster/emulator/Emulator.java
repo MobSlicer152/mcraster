@@ -150,6 +150,15 @@ public class Emulator extends Thread {
                         }
                 ));
         store.addFunction(
+                new ImportFunction(MCRaster.MOD_ID, "setPalette",
+                        FunctionType.of(List.of(ValType.I32), List.of()),
+                        (Instance instance, long... args) -> {
+                            var palette = (int) args[0];
+							screen.setPalette(palette);
+                            return null;
+                        }
+                ));
+        store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "presentFrame",
                         FunctionType.of(List.of(ValType.I32, ValType.I32), List.of()),
                         (Instance instance, long... args) -> {

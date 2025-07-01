@@ -15,6 +15,7 @@ pub trait DoomGeneric {
     fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
     fn get_key(&mut self) -> Option<KeyData>;
     fn set_window_title(&mut self, title: &str);
+    fn set_palette_index(&mut self, palette: i32);
 }
 
 // TODO: Migrate to doomgeneric_Create
@@ -88,6 +89,13 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
         .expect("Can't convert title c string to rust string");
     if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut() }.as_mut() {
         doom_box.set_window_title(title);
+    }
+}
+
+#[no_mangle]
+extern "C" fn DG_SetPaletteIndex(palette: raw::c_int) { 
+    if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut() }.as_mut() {
+        doom_box.set_palette_index(palette);
     }
 }
 

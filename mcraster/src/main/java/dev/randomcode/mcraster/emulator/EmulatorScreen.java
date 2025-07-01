@@ -9,6 +9,8 @@ import java.util.Arrays;
 
 public class EmulatorScreen {
     public byte[] framebuffer = new byte[WIDTH * HEIGHT];
+	private int palette = 0;
+
     // TODO: gamerules for these?
     public static final int WIDTH = 320;
     public static final int HEIGHT = 200;
@@ -24,13 +26,20 @@ public class EmulatorScreen {
     }
 
     public void render(ServerWorld world, BlockPos emulatorPos) {
-        BlockPos topLeft = emulatorPos.up(EmulatorScreen.HEIGHT);
+        var topLeft = emulatorPos.up(EmulatorScreen.HEIGHT);
+		var palette = MCRaster.palettes.get(this.palette);
         for (int y = 0; y < EmulatorScreen.HEIGHT; y++) {
             for (int x = 0; x < EmulatorScreen.WIDTH; x++) {
                 BlockPos pos = topLeft.add(x, -y, 0);
-                BlockState block = MCRaster.palette.get(getPixel(x, y)).getDefaultState();
+                BlockState block = palette.get(getPixel(x, y)).getDefaultState();
                 world.setBlockState(pos, block);
             }
         }
     }
+
+	public void setPalette(int palette) {
+		if (palette > 0 && palette < MCRaster.palettes.size()) {
+			this.palette = palette;
+		}
+	}
 }

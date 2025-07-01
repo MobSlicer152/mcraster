@@ -32,6 +32,7 @@
 #include "deh_main.h"
 #include "deh_misc.h"
 #include "doomdef.h"
+#include "doomgeneric.h"
 #include "doomkeys.h"
 
 #include "g_game.h"
@@ -992,6 +993,7 @@ void ST_doPaletteStuff(void)
     if (palette != st_palette)
     {
 	st_palette = palette;
+	DG_SetPaletteIndex(palette);
 	pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
 	I_SetPalette (pal);
     }

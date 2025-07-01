@@ -9,6 +9,8 @@ unsafe extern "C" {
     fn presentFrame(buffer: *const u8, size: i32);
     fn getPixel(x: i32, y: i32) -> i32;
     fn setPixel(x: i32, y: i32, color: i32);
+    fn getPaletteCount() -> i32;
+    fn setPalette(index: i32);
 }
 
 struct Doom;
@@ -26,11 +28,16 @@ impl doomgeneric::game::DoomGeneric for Doom {
     }
 
     fn get_key(&mut self) -> Option<doomgeneric::input::KeyData> {
+        // TODO
         None
     }
 
     fn set_window_title(&mut self, title: &str) {
         
+    }
+
+    fn set_palette_index(&mut self, palette: i32) {
+        unsafe { setPalette(palette) };
     }
 }
 

@@ -43,7 +43,7 @@ class WAD:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wad", "-w", default="doom1.wad")
-    parser.add_argument("--palette-basename", "-p", "-o", default="data/doom_palette_.json")
+    parser.add_argument("--palette-basename", "-p", "-o", default="data/palette_doom_.json")
 
     args = parser.parse_args()
 

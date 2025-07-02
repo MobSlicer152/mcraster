@@ -2,6 +2,8 @@
 
 This is an experimental but mostly functional project that adds a controllable screen.
 
+https://github.com/user-attachments/assets/1ec0adff-1743-4462-9f7c-a9cccb6575b9
+
 ## Features
 
 - 320x200 256 color screen at close to 20Hz (depends on your computer, but that's the limit)

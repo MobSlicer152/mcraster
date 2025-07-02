@@ -17,10 +17,12 @@ https://github.com/user-attachments/assets/1ec0adff-1743-4462-9f7c-a9cccb6575b9
 - Palettes can be selected at runtime by the program
 - Palettes and program are controlled with a datapack
 - Generally doesn't crash the game when the data is invalid
+- Runs on the server
 
 ## Problems
 
 - The code is kinda messy in places, and mainly oriented towards Doom working
+- No user input for the guest yet
 - Sometimes the emulator doesn't cleanly shut down
 - Unloading the running datapack kinda screws it up
 - Screen size isn't configurable yet, and 320x200 requires a high render distance to fully see

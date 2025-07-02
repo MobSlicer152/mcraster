@@ -8,8 +8,9 @@ This is an experimental but mostly functional project that adds a controllable s
 - Includes VGA mode 13h and Doom color palettes, and scripts to generate your own
 - Script to make versions of 8-bit images out of Minecraft block textures (`scripts/convert.py`)
 
-  <img src="img/test.png" />
+  <img src="img/test.png" width=200 />
   <img src="img/doom.png" width=200 />
+
 - Full WebAssembly runtime using [Chicory](https://chicory.dev), with WASI and access to a virtualized filesystem backed by a zip file
 - Palettes can be selected at runtime by the program
 - Palettes and program are controlled with a datapack
@@ -106,4 +107,3 @@ Once I implement event callbacks, there will be optional functions like this tha
 ```c
 void keyCallback(void* userData, bool pressed, int key);
 ```
-

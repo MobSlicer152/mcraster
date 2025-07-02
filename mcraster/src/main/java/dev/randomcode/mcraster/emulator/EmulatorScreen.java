@@ -2,8 +2,11 @@ package dev.randomcode.mcraster.emulator;
 
 import dev.randomcode.mcraster.MCRaster;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.Arrays;
 
@@ -19,27 +22,39 @@ public class EmulatorScreen {
         Arrays.fill(framebuffer, color);
     }
     public byte getPixel(int x, int y) {
-        return framebuffer[y * HEIGHT + x];
+        return framebuffer[y * WIDTH + x];
     }
     public void setPixel(int x, int y, byte color) {
-        framebuffer[y * HEIGHT + x] = color;
+        framebuffer[y * WIDTH + x] = color;
     }
 
     public void render(ServerWorld world, BlockPos emulatorPos) {
-        var topLeft = emulatorPos.up(EmulatorScreen.HEIGHT);
+        var topLeft = emulatorPos.up(HEIGHT);
+        var first = new Vec3i(topLeft.getX() + WIDTH, topLeft.getY() + HEIGHT, topLeft.getZ());
+        var second = new Vec3i(topLeft.getX(), topLeft.getY(), topLeft.getZ() - 1);
+        var box = BlockBox.create(first, second);
+
 		var palette = MCRaster.palettes.get(this.palette);
-        for (int y = 0; y < EmulatorScreen.HEIGHT; y++) {
-            for (int x = 0; x < EmulatorScreen.WIDTH; x++) {
-                BlockPos pos = topLeft.add(x, -y, 0);
-                BlockState block = palette.get(getPixel(x, y)).getDefaultState();
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                var pos = topLeft.add(x, -y, 0);
+                var block = palette.get(getPixel(x, y)).getDefaultState();
                 world.setBlockState(pos, block);
+                var back = pos.add(0, 0, -1);
+                world.setBlockState(back, Blocks.BLACK_CONCRETE.getDefaultState());
             }
         }
+
+        // prevent water and coral and stuff from updating hopefully
+        world.clearUpdatesInArea(box);
     }
 
 	public void setPalette(int palette) {
 		if (palette > 0 && palette < MCRaster.palettes.size()) {
 			this.palette = palette;
-		}
+		} else {
+            // default to the last one, which should be VGA
+            this.palette = MCRaster.palettes.size() - 1;
+        }
 	}
 }

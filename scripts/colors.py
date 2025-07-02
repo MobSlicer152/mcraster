@@ -10,7 +10,7 @@ from os import path
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--minecraft-assets", "-a", required=True, help="The path to the assets folder of an extracted Minecraft client JAR")
-    parser.add_argument("--output", "-o", default="colors.json", help="Output JSON file")
+    parser.add_argument("--output", "-o", default="data/colors.json", help="Output JSON file")
     
     args = parser.parse_args()
     assets = args.minecraft_assets

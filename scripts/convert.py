@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", "-i", help="The image to convert")
     parser.add_argument("--output", "-o", help="Write the converted image to the given file")
-    parser.add_argument("--palette", "-p", default="mc_palette.json", help="The block palette")
+    parser.add_argument("--palette", "-p", default="mcraster/src/main/resources/data/mcraster/palettes/palette_99.json", help="The block palette")
     parser.add_argument("--minecraft-assets", "-a", help="The path to the assets folder of an extracted Minecraft client JAR")
     
     args = parser.parse_args()

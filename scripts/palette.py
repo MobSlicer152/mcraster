@@ -34,7 +34,7 @@ def hex2hsv(x):
     x = int(x, 16)
     (r, g, b) = ((x >> 16) & 0xFF, (x >> 8) & 0xFF, (x >> 0) & 0xFF)
     return np.array(rgb2hsv(r, g, b))
-    
+
 
 def closest(colors, color):
     dists = np.sqrt(np.sum((colors - color) ** 2, axis=1))
@@ -44,39 +44,45 @@ def closest(colors, color):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--input", "-i", default="palette.json", help="The list of color values to map"
+        "--input", "-i", default="data/palette_99.json", nargs='+', help="The list of color values to map"
     )
     parser.add_argument(
-        "--colors", "-c", default="colors.json", help="The color map JSON to use"
+        "--colors", "-c", default="data/colors.json", help="The color map JSON to use"
     )
+    parser.add_argument("--first", "-f", default=99, type=int, help="The starting number for the palette(s)")
     parser.add_argument(
-        "--output", "-o", default="mc_palette.json", help="The output JSON file"
+        "--output", "-o", default="mcraster/src/main/resources/data/mcraster/palettes", help="The output JSON file"
     )
 
     args = parser.parse_args()
-    palette_json = args.input
+    palette_jsons = args.input if type(args.input) == list else [args.input]
+    print(palette_jsons)
     colors_json = args.colors
+    n = args.first
     output = args.output
-
-    palette = None
-    with open(palette_json, "r") as f:
-        palette = json.load(f)
-    palette = np.array([hex2hsv(x) for x in palette])
 
     color_map = None
     with open(colors_json, "r") as f:
         color_map = json.load(f)
     colors = np.array([hex2hsv(x) for x in color_map.values()])
 
-    mc_palette = []
-    names = list(color_map.keys())
-    for color in palette:
-        n = closest(colors, color)
-        print(f"{color} -> {names[n]} {colors[n]}")
-        mc_palette.append(names[n])
+    for palette_json in palette_jsons:
+        palette = None
+        with open(palette_json, "r") as f:
+            palette = json.load(f)
+        palette = np.array([hex2hsv(x) for x in palette])
 
-    with open(output, "w") as f:
-        json.dump(mc_palette, f, indent=4)
+        mc_palette = []
+        names = list(color_map.keys())
+        for color in palette:
+            i = closest(colors, color)
+            print(f"{color} -> {names[i]} {colors[i]}")
+            mc_palette.append(names[i])
+
+        with open(path.join(output, f"palette_{n}.json"), "w") as f:
+            json.dump(mc_palette, f, indent=4)
+
+        n += 1
 
 
 if __name__ == "__main__":

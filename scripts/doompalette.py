@@ -30,7 +30,7 @@ class WAD:
 
             self.numlumps = struct.unpack("<i", f.read(4))[0]
             self.infotableofs = struct.unpack("<i", f.read(4))[0]
-            
+
             if size < self.infotableofs:
                 raise ValueError(f"info table is at {self.infotableofs}, but file is only {size} bytes")
 
@@ -43,7 +43,7 @@ class WAD:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wad", "-w", default="doom1.wad")
-    parser.add_argument("--palette-basename", "-p", "-o", default="data/palette_doom_.json")
+    parser.add_argument("--palette-basename", "-p", "-o", default="data/palette_.json")
 
     args = parser.parse_args()
 
@@ -55,6 +55,7 @@ def main():
     playpal = wad.dirs[i]
     palsize = 3 * 256
     numpals = playpal.size // palsize # 3 bytes per color, 256 colors per palette
+    print(f"got {numpals} palettes from lump {i} in WAD {args.wad}");
     (name, ext) = path.splitext(args.palette_basename)
     for i in range(0, numpals):
         pal = []
@@ -62,10 +63,12 @@ def main():
             r = playpal.data[i * palsize + j * 3 + 0]
             g = playpal.data[i * palsize + j * 3 + 1]
             b = playpal.data[i * palsize + j * 3 + 2]
-            rgb = (r << 24) | (g << 16) | (b << 8) | 0
-            pal.append(f"{rgb:08X}")
+            rgb = (r << 16) | (g << 8) | (b << 0)
+            pal.append(f"{rgb:06X}")
 
-        with open(f"{name}{i}{ext}", "w") as f:
+        out = f"{name}{i}{ext}"
+        print(f"writing palette {out}")
+        with open(f"{out}", "w") as f:
             json.dump(pal, f, indent=4)
 
 

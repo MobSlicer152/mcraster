@@ -1,5 +1,6 @@
 package dev.randomcode.mcraster.util;
 
+import dev.randomcode.mcraster.MCRaster;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.registry.Registries;
@@ -20,12 +21,13 @@ public class Palette {
     }
 
     public Block get(byte color) {
-		// ensure the color is unsigned. i get discouraging unsigned types, but not implementing them is lazy.
+		// ensure the color is unsigned. i get discouraging unsigned types, but not implementing them is crazy.
 		int realColor = color & 0xFF;
         if (realColor < palette.size()) {
             return Registries.BLOCK.get(palette.get(realColor));
         } else {
             // leave holes in stuff with unknown colors
+            MCRaster.LOGGER.warn("bad color {}", realColor);
             return Blocks.AIR;
         }
     }

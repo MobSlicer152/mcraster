@@ -6,5 +6,8 @@
 //! If you need this in a multithreaded environment, it's probably best to start this
 //! in a seperate thread and communicate using channels.
 
+#![allow(non_snake_case)]
+#![allow(static_mut_refs)]
+
 pub mod game;
 pub mod input;

@@ -2,29 +2,35 @@ package dev.randomcode.mcraster;
 
 import com.dylibso.chicory.wasm.Parser;
 import com.dylibso.chicory.wasm.WasmModule;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.context.CommandContext;
 import dev.randomcode.mcraster.entity.EntityType;
+import dev.randomcode.mcraster.util.IReloadable;
 import dev.randomcode.mcraster.util.NaturalOrderComparator;
 import dev.randomcode.mcraster.util.Palette;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
+
+import static com.mojang.brigadier.builder.LiteralArgumentBuilder.literal;
 
 public class MCRaster implements ModInitializer {
     public static final String MOD_ID = "mcraster";
@@ -39,6 +45,8 @@ public class MCRaster implements ModInitializer {
     public static WasmModule module;
     public static Path tempZip;
     public static FileSystem dataFs;
+    public static IReloadable emulatorEntity;
+    public static ServerPlayerEntity grabPlayer;
 
     public static Identifier identifier(String name) {
         return Identifier.of(MCRaster.MOD_ID, name);
@@ -50,7 +58,7 @@ public class MCRaster implements ModInitializer {
             @Override
             public void reload(ResourceManager manager) {
                 try {
-					loadResources(manager);
+                    loadResources(manager);
                 } catch (Exception e) {
                     LOGGER.error("Failed to load resource", e);
                 }
@@ -65,44 +73,44 @@ public class MCRaster implements ModInitializer {
         EntityType.ensureInit();
     }
 
-	private class ResourceWithID {
-		public Identifier id;
-		public Resource resource;
+    private static class ResourceWithID {
+        public Identifier id;
+        public Resource resource;
 
-		public ResourceWithID(Identifier id, Resource resource) {
-			this.id = id;
-			this.resource = resource;
-		}
+        public ResourceWithID(Identifier id, Resource resource) {
+            this.id = id;
+            this.resource = resource;
+        }
 
-		@Override
-		public String toString() {
-			return id.toString();
-		}
-	}
+        @Override
+        public String toString() {
+            return id.toString();
+        }
+    }
 
-	public void loadResources(ResourceManager manager) throws IOException {
-		LOGGER.info("Loading palette(s)");
-		palettes = new ArrayList<>();
-		var paletteResources = new ArrayList<ResourceWithID>();
-		
-		// this indentation is vile
-		for (var id : manager.findResources("palettes",
-							path -> {
-								var pathStr = path.toString();
-								LOGGER.info(pathStr);
-								return pathStr.startsWith("palette") && pathStr.endsWith(".json");
-							}).keySet()) {
-			var palette = manager.getResource(id).orElseThrow();
-			paletteResources.add(new ResourceWithID(id, palette));
-		}
+    public void loadResources(ResourceManager manager) throws IOException {
+        LOGGER.info("Loading palette(s)");
+        palettes = new ArrayList<>();
+        var paletteResources = new ArrayList<ResourceWithID>();
 
-		// sort the palettes more nicely
-		Collections.sort(paletteResources, new NaturalOrderComparator());
-		LOGGER.info("Got {} palette(s)", paletteResources.size());
-		for (var palette : paletteResources) {
-			LOGGER.info("\t{}", palette);
-			palettes.add(new Palette(palette.resource.getReader()));
-		}
+        // this indentation is vile
+        for (var id : manager.findResources("palettes",
+                path -> {
+                    var pathStr = path.toString();
+                    LOGGER.info(pathStr);
+                    return pathStr.startsWith("mcraster:palettes/palette_") && pathStr.endsWith(".json");
+                }).keySet()) {
+            var palette = manager.getResource(id).orElseThrow();
+            paletteResources.add(new ResourceWithID(id, palette));
+        }
+
+        // sort the palettes more nicely
+        paletteResources.sort(new NaturalOrderComparator<>());
+        LOGGER.info("Got {} palette(s)", paletteResources.size());
+        for (var palette : paletteResources) {
+            LOGGER.info("\t{}", palette);
+            palettes.add(new Palette(palette.resource.getReader()));
+        }
 
         LOGGER.info("Loading WASM module");
         var module = manager.getResource(identifier("program/program.wasm")).orElseThrow();
@@ -128,5 +136,13 @@ public class MCRaster implements ModInitializer {
                 LOGGER.error("Failed to store data.zip", e);
             }
         });
-	}
+
+        if (emulatorEntity != null) {
+            emulatorEntity.onReload();
+        }
+    }
+
+    public static boolean grabbed() {
+        return grabPlayer != null;
+    }
 }

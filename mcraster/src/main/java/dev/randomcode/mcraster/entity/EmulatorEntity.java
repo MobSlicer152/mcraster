@@ -1,18 +1,16 @@
 package dev.randomcode.mcraster.entity;
 
 import dev.randomcode.mcraster.MCRaster;
-import dev.randomcode.mcraster.emulator.EmulatorScreen;
 import dev.randomcode.mcraster.emulator.Emulator;
-import net.minecraft.block.BlockState;
+import dev.randomcode.mcraster.util.IReloadable;
 import net.minecraft.entity.MarkerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.function.Predicate;
 
-public class EmulatorEntity extends MarkerEntity {
+public class EmulatorEntity extends MarkerEntity implements IReloadable {
     private static Emulator emulator = null;
 
     public EmulatorEntity(net.minecraft.entity.EntityType<?> type, World world) {
@@ -36,7 +34,14 @@ public class EmulatorEntity extends MarkerEntity {
             });
 
 			checkEmulator();
+
+            MCRaster.emulatorEntity = this;
         }
+    }
+
+    @Override
+    public void onRemoved() {
+        MCRaster.emulatorEntity = null;
     }
 
     @Override
@@ -44,7 +49,7 @@ public class EmulatorEntity extends MarkerEntity {
         if (!getWorld().isClient()) {
 			// make sure an emulator thread is running
 			checkEmulator();
-            emulator.getScreen().render((ServerWorld)getWorld(), getBlockPos());
+            emulator.getScreen().render((ServerWorld) getWorld(), getBlockPos());
         }
     }
 
@@ -54,9 +59,30 @@ public class EmulatorEntity extends MarkerEntity {
     }
 
 	private void checkEmulator() {
-		if (emulator == null || !emulator.isAlive() && MCRaster.module != null) {
+		if ((emulator == null || !emulator.isAlive()) && MCRaster.module != null) {
 			emulator = new Emulator(this);
 		    emulator.start();
+            while (!emulator.running()) {
+                Thread.yield();
+            }
 		}
-	}
+    }
+
+    @Override
+    public void onReload() {
+        // reload the emulator
+
+        if (emulator != null) {
+            emulator.shutdown();
+            MCRaster.LOGGER.debug("Waiting for emulator to shut down");
+            while (emulator.isAlive()) {
+                try {
+                    emulator.join();
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+
+        checkEmulator();
+    }
 }

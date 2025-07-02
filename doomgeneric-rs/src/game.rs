@@ -93,7 +93,7 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
 }
 
 #[no_mangle]
-extern "C" fn DG_SetPaletteIndex(palette: raw::c_int) { 
+extern "C" fn DG_SetPaletteIndex(palette: raw::c_int) {
     if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut() }.as_mut() {
         doom_box.set_palette_index(palette);
     }

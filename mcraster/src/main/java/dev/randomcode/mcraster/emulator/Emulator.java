@@ -4,6 +4,7 @@ import com.dylibso.chicory.runtime.*;
 
 import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
+import com.dylibso.chicory.wasm.types.Export;
 import com.dylibso.chicory.wasm.types.FunctionType;
 import com.dylibso.chicory.wasm.types.ValType;
 import dev.randomcode.mcraster.MCRaster;
@@ -11,19 +12,22 @@ import dev.randomcode.mcraster.entity.EmulatorEntity;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.nio.file.FileSystems;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class Emulator extends Thread {
     private final EmulatorEntity parent;
+    private final AtomicBoolean running;
+    private int callbackPtr = 0;
+    private ExportFunction keyCallback;
     private EmulatorScreen screen;
 
     public Emulator(EmulatorEntity parent) {
         super();
 
         this.parent = parent;
+        this.running = new AtomicBoolean(false);
         setName("Emulator thread");
     }
 
@@ -55,11 +59,13 @@ public class Emulator extends Thread {
         var wasi = initWasi();
         var store = initHostFunctions(wasi);
 
-        while (parent.isAlive()) {
+        running.set(true);
+        while (running()) {
             screen.clear((byte) 0);
 
             try {
-                store.instantiate("program", MCRaster.module);
+                var instance = store.instantiate("program", MCRaster.module);
+                initCallbacks(instance);
             } catch (Exception e) {
                 MCRaster.LOGGER.error("Failed to run emulator", e);
             }
@@ -71,6 +77,17 @@ public class Emulator extends Thread {
                 // doesn't need to be precise at all, just an arbitrary wait
             }
         }
+
+        running.set(false);
+    }
+
+    public boolean running() {
+        return parent.isAlive() && running.get();
+    }
+
+    public void shutdown() {
+        MCRaster.LOGGER.debug("Emulator shutting down");
+        running.set(false);
     }
 
     private WasiPreview1 initWasi() {
@@ -89,6 +106,10 @@ public class Emulator extends Thread {
         return WasiPreview1.builder().withOptions(optionBuilder.build()).build();
     }
 
+    private void initCallbacks(Instance instance) {
+        keyCallback = instance.export("keyCallback");
+    }
+
     private Store initHostFunctions(WasiPreview1 wasi) {
         var store = new Store();
         store.addFunction(wasi.toHostFunctions());
@@ -102,23 +123,17 @@ public class Emulator extends Thread {
         store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "running",
                         FunctionType.of(List.of(), List.of(ValType.I32)),
-                        (Instance instance, long... args) -> {
-                            return new long[]{parent.isAlive() ? 1 : 0};
-                        }
+                        (Instance instance, long... args) -> new long[]{running() ? 1 : 0}
                 ));
         store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "getWidth",
                         FunctionType.of(List.of(), List.of(ValType.I32)),
-                        (Instance instance, long... args) -> {
-                            return new long[]{EmulatorScreen.WIDTH};
-                        }
+                        (Instance instance, long... args) -> new long[]{EmulatorScreen.WIDTH}
                 ));
         store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "getHeight",
                         FunctionType.of(List.of(), List.of(ValType.I32)),
-                        (Instance instance, long... args) -> {
-                            return new long[]{EmulatorScreen.HEIGHT};
-                        }
+                        (Instance instance, long... args) -> new long[]{EmulatorScreen.HEIGHT}
                 ));
         store.addFunction(
                 new ImportFunction(MCRaster.MOD_ID, "clearScreen",
@@ -171,6 +186,14 @@ public class Emulator extends Thread {
                             }
 
                             System.arraycopy(instance.memory().readBytes(base, size), 0, screen.framebuffer, 0, size);
+                            return null;
+                        }
+                ));
+        store.addFunction(
+                new ImportFunction(MCRaster.MOD_ID, "setCallbackData",
+                        FunctionType.of(List.of(ValType.I32), List.of()),
+                        (Instance instance, long... args) -> {
+                            callbackPtr = (int) args[0];
                             return null;
                         }
                 ));

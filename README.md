@@ -7,7 +7,9 @@ This is an experimental but mostly functional project that adds a controllable s
 - 320x200 256 color screen at close to 20Hz (depends on your computer, but that's the limit)
 - Includes VGA mode 13h and Doom color palettes, and scripts to generate your own
 - Script to make versions of 8-bit images out of Minecraft block textures (`scripts/convert.py`)
-  [img/doom.png]()
+
+  <img src="img/test.png" />
+  <img src="img/doom.png" width=200 />
 - Full WebAssembly runtime using [Chicory](https://chicory.dev), with WASI and access to a virtualized filesystem backed by a zip file
 - Palettes can be selected at runtime by the program
 - Palettes and program are controlled with a datapack

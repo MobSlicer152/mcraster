@@ -50,11 +50,12 @@ public class EmulatorScreen {
     }
 
 	public void setPalette(int palette) {
-		if (palette > 0 && palette < MCRaster.palettes.size()) {
+		if (palette >= 0 && palette < MCRaster.palettes.size()) {
 			this.palette = palette;
 		} else {
+            MCRaster.LOGGER.warn("palette {} out of range, only {} defined", palette, MCRaster.palettes.size());
             // default to the last one, which should be VGA
-            this.palette = MCRaster.palettes.size() - 1;
+            //this.palette = MCRaster.palettes.size() - 1;
         }
 	}
 }

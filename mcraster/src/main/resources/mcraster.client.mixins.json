@@ -2,9 +2,7 @@
   "required": false,
   "package": "dev.randomcode.mcraster.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "input.KeyboardInputMixin"
-  ],
+  "mixins": [],
   "injectors": {
     "defaultRequire": 1
   },

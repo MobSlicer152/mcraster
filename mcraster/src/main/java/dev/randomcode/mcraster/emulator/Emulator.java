@@ -65,7 +65,7 @@ public class Emulator extends Thread {
 
             try {
                 var instance = store.instantiate("program", MCRaster.module);
-                initCallbacks(instance);
+                //initCallbacks(instance);
             } catch (Exception e) {
                 MCRaster.LOGGER.error("Failed to run emulator", e);
             }
